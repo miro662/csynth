@@ -9,6 +9,7 @@
 
 #include "buffer.h"
 #include "rack.h"
+#include "modules/wave.h"
 
 #define FREQ 44100
 
@@ -67,5 +68,8 @@ int main(int argc, char **argv) {
 }
 
 ModuleId buildSynth(Rack* synth) {
-    return addModule(synth, 440.0);
+    SineWaveSettings* svs = malloc(sizeof(SineWaveSettings));
+    svs->frequencyHz = 440;
+    svs->samplesPerSecond = FREQ;
+    return addModule(synth, sineWaveFn, svs);
 }

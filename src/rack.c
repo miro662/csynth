@@ -18,13 +18,15 @@ Rack newRack(size_t chSamples, uint64_t samplesPerSecond) {
     };
 };
 
-ModuleId addModule(Rack* rack, float frequency) {
+ModuleId addModule(Rack *rack, ModuleFn fn, void *settings) {
     // if there is a free channel, use it
     for (ModuleId i = 0; i < rack->chCapacity; i++) {
         Module* channel = &rack->channels[i];
         if (!channel->occupied) {
             channel->occupied = true;
-            channel->frequency = frequency;
+            channel->fn = fn;
+            channel->settings = settings;
+            // channel->deps is 0, correct for now
             return i; 
         }
     }
@@ -35,15 +37,25 @@ ModuleId addModule(Rack* rack, float frequency) {
     ModuleId lastId = newChCapacity - 1;
     Module* lastChannel = &rack->channels[lastId];
     lastChannel->occupied = true;
-    lastChannel->frequency = frequency;
+    lastChannel->fn = fn;
+    lastChannel->settings = settings;
+    // channel->deps is 0, correct for now
     return lastId;
 }
 
 void freeModule(Rack* rack, ModuleId id) {
     rack->channels[id].occupied = false;
+    if (rack->channels[id].settings != NULL) {
+        free(rack->channels[id].settings);
+    }
 }
 
 void freeRack(Rack rack) {
+    for (size_t ch = 0; ch < rack.chCapacity; ++ch) {
+        if (rack.channels[ch].occupied && rack.channels[ch].settings != NULL) {
+            free(rack.channels[ch].settings);
+        }
+    }
     free(rack.channels);
 }
 
@@ -53,14 +65,11 @@ void synthesise(Rack *const rack, Buffer *buffer, ModuleId outChannel, float *ou
     size_t outSample = 0;
     while (outSample < outSamples) {
         // synthesise
-        for (ModuleId ch = 0; ch < rack->chCapacity; ++ch) {
-            Module *chan = &rack->channels[ch];
-            float *chanData = buffer->data + (ch * rack->chSamples);
-            if (chan->occupied) {
-                for (uint32_t s = 0; s < rack->chSamples; ++s) {
-                    float time = (rack->sample + s) / (float) rack->samplesPerSecond;
-                    chanData[s] = sin(time * 2 * 3.14159 * chan->frequency);
-                }
+        for (ModuleId m = 0; m < rack->chCapacity; ++m) {
+            Module *mod = &rack->channels[m];
+            float *modOutput = buffer->data + (m * rack->chSamples);
+            if (mod->occupied) {
+                mod->fn(modOutput, rack->chSamples, mod->settings, rack->sample);
             }
         }
         rack->sample += rack->chSamples;
