@@ -5,8 +5,10 @@
 #include <stdint.h>
 
 #include "buffer.h"
+
+#define MAX_MODULE_INPUTS 8
  
-typedef void (*ModuleFn)(float *output, size_t outputLen, void *settings, float *const timeData);
+typedef void (*ModuleFn)(float *output, size_t outputLen, void *settings, float **inputs);
 
 typedef enum {
     MODULE_FN,
@@ -19,6 +21,7 @@ typedef struct {
     
     ModuleFn fn;
     void *settings;
+    uint32_t inputs[MAX_MODULE_INPUTS];
 } Module;
 
 typedef struct {

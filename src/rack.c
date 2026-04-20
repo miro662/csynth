@@ -51,10 +51,15 @@ void synthesise(Rack *const rack, Buffer *buffer, ModuleId outChannel, float *ou
         for (ModuleId m = 0; m < rack->chCapacity; ++m) {
             Module *mod = &rack->channels[m];
             float *modOutput = buffer->data + (m * rack->chSamples);
+            // todo: move modPtrs building logic to a better place
+            float *inputs[MAX_MODULE_INPUTS];
+            for (int i = 0; i < MAX_MODULE_INPUTS; ++i) {
+                inputs[i] = buffer->data + (mod->inputs[i] * rack->chSamples);
+            }
             if (mod->occupied) {
                 switch (mod->typ) {
                     case MODULE_FN:
-                        mod->fn(modOutput, rack->chSamples, mod->settings, buffer->data);
+                        mod->fn(modOutput, rack->chSamples, mod->settings, inputs);
                         break;
                     case MODULE_TIME:    
                         for (size_t i = 0; i < rack->chSamples; ++i) {
