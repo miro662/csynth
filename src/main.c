@@ -8,13 +8,13 @@
 #include <stdbool.h>
 
 #include "buffer.h"
-#include "synth.h"
+#include "rack.h"
 
 #define FREQ 44100
 
 typedef struct {
-    Synth* synth;
-    Buffer buffer;
+    Rack* synth;
+    Buffer* buffer;
     float* output;
 } SdlStatus;
 
@@ -27,15 +27,15 @@ void sdlCallback(void *userdata, SDL_AudioStream *stream, int additional_amount,
     SDL_PutAudioStreamData(stream, s->output, additional_amount);
 }
 
-void sdlPlay(Synth *synth, uint32_t ms) {
+void sdlPlay(Rack *synth, uint32_t ms) {
     if (!SDL_Init(SDL_INIT_AUDIO)) {
-        fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
         exit(-1);
     }
 
+    Buffer buffer = newBuffer();
     SdlStatus status = {
         .synth = synth,
-        .buffer = newBuffer(),
+        .buffer = &buffer,
         .output = calloc(2 << 16, sizeof(float))
     };
 
@@ -54,18 +54,18 @@ void sdlPlay(Synth *synth, uint32_t ms) {
     SDL_Quit();
 }
 
-ChannelId buildSynth(Synth* synth);
+ModuleId buildSynth(Rack* synth);
 
 int main(int argc, char **argv) {
-    Synth synth = newSynth(64, FREQ);
+    Rack synth = newRack(64, FREQ);
     buildSynth(&synth);
 
     sdlPlay(&synth, 5000);
 
-    freeSynth(synth);
+    freeRack(synth);
     return 0;
 }
 
-ChannelId buildSynth(Synth* synth) {
-    return newChannel(synth, 440.0);
+ModuleId buildSynth(Rack* synth) {
+    return addModule(synth, 440.0);
 }
