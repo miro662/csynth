@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
-ModuleId addModuleInner(Rack *rack, ModuleType moduleType, ModuleFn fn, void *settings);
+ModuleId addModuleInner(Rack *rack, ModuleType typ, ModuleFn fn, void *settings, uint32_t inputs[MAX_MODULE_INPUTS]);
 
 Rack newRack(size_t chSamples, uint64_t samplesPerSecond) {
     size_t chCapacity = 16;
@@ -18,12 +18,13 @@ Rack newRack(size_t chSamples, uint64_t samplesPerSecond) {
         .sample = 0,
         .samplesPerSecond = samplesPerSecond
     };
-    addModuleInner(&rack, MODULE_TIME, NULL, NULL);
+
+    addModuleInner(&rack, MODULE_TIME, NULL, NULL, (uint32_t[]){ 0, 0 });
     return rack;
 };
 
-ModuleId addModule(Rack *rack, ModuleFn fn, void *settings) {
-    return addModuleInner(rack, MODULE_FN, fn, settings);
+ModuleId addModule(Rack *rack, ModuleFn fn, void *settings, uint32_t inputs[MAX_MODULE_INPUTS]) {
+    return addModuleInner(rack, MODULE_FN, fn, settings, inputs);
 }
 
 void freeModule(Rack* rack, ModuleId id) {
@@ -81,7 +82,7 @@ void synthesise(Rack *const rack, Buffer *buffer, ModuleId outChannel, float *ou
     }
 } 
 
-ModuleId addModuleInner(Rack *rack, ModuleType typ, ModuleFn fn, void *settings) {
+ModuleId addModuleInner(Rack *rack, ModuleType typ, ModuleFn fn, void *settings, uint32_t inputs[MAX_MODULE_INPUTS]) {
     // if there is a free channel, use it
     for (ModuleId i = 0; i < rack->chCapacity; i++) {
         Module* channel = &rack->channels[i];
@@ -90,6 +91,7 @@ ModuleId addModuleInner(Rack *rack, ModuleType typ, ModuleFn fn, void *settings)
             channel->fn = fn;
             channel->settings = settings;
             channel->typ = typ;
+            memcpy(channel->inputs, inputs, MAX_MODULE_INPUTS * sizeof(uint32_t));
             return i; 
         }
     }
@@ -103,5 +105,6 @@ ModuleId addModuleInner(Rack *rack, ModuleType typ, ModuleFn fn, void *settings)
     lastChannel->fn = fn;
     lastChannel->settings = settings;
     lastChannel->typ = typ;
+    memcpy(lastChannel->inputs, inputs, MAX_MODULE_INPUTS * sizeof(uint32_t));
     return lastId;
 }

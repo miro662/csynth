@@ -4,10 +4,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef struct {
-    float frequencyHz;
-} SineWaveSettings;
-
-void sineWaveFn(float *output, size_t outputLen, void *settings, float **inputs);
+void SineWave_Fn(float *output, size_t outputLen, void *settings, float **inputs);
 
 #endif

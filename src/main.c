@@ -9,6 +9,7 @@
 
 #include "buffer.h"
 #include "rack.h"
+#include "modules/arith.h"
 #include "modules/wave.h"
 
 #define FREQ 44100
@@ -70,7 +71,15 @@ int main(int argc, char **argv) {
 }
 
 ModuleId buildSynth(Rack* synth) {
-    SineWaveSettings* svs = malloc(sizeof(SineWaveSettings));
-    svs->frequencyHz = 440.0;
-    return addModule(synth, sineWaveFn, svs);
+    Constant_Settings *c1s = malloc(sizeof(Constant_Settings));
+    c1s->value = 440.0;
+    ModuleId soundWaveFreq = addModule(synth, Constant_Fn, c1s, (uint32_t[]){0, 0});
+    ModuleId soundWave = addModule(synth, SineWave_Fn, NULL, (uint32_t[]){ 0, soundWaveFreq });
+    
+    Constant_Settings *c2s = malloc(sizeof(Constant_Settings));
+    c2s->value = 0.1;
+    ModuleId timeWaveFreq = addModule(synth, Constant_Fn, c2s, (uint32_t[]){0, 0});
+    ModuleId timeWave = addModule(synth, SineWave_Fn, NULL, (uint32_t[]){ 0, timeWaveFreq });
+
+    return addModule(synth, Multiply_Fn, NULL, (uint32_t[]){ soundWave, timeWave });
 }

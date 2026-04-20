@@ -6,7 +6,7 @@
 
 #include "buffer.h"
 
-#define MAX_MODULE_INPUTS 8
+#define MAX_MODULE_INPUTS 2
  
 typedef void (*ModuleFn)(float *output, size_t outputLen, void *settings, float **inputs);
 
@@ -35,7 +35,7 @@ typedef struct {
 typedef uint32_t ModuleId;
 
 Rack newRack(size_t chSamples, uint64_t samplesPerSecond);
-ModuleId addModule(Rack *rack, ModuleFn fn, void *settings);
+ModuleId addModule(Rack *rack, ModuleFn fn, void *settings, uint32_t inputs[MAX_MODULE_INPUTS]);
 void freeModule(Rack *rack, ModuleId id);
 void freeRack(Rack rack);
 void synthesise(Rack *const rack, Buffer *buffer, ModuleId outChannel, float *output, size_t outSamples);
