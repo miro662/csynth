@@ -6,10 +6,17 @@
 
 #include "buffer.h"
  
-typedef void (*ModuleFn)(float *output, size_t outputLen, void *settings, uint64_t sampleId);
+typedef void (*ModuleFn)(float *output, size_t outputLen, void *settings, float *const timeData);
+
+typedef enum {
+    MODULE_FN,
+    MODULE_TIME
+} ModuleType;
 
 typedef struct {
     bool occupied;
+    ModuleType typ;
+    
     ModuleFn fn;
     void *settings;
 } Module;

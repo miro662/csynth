@@ -17,18 +17,19 @@ typedef struct {
     Rack* synth;
     Buffer* buffer;
     float* output;
+    ModuleId outputModule;
 } SdlStatus;
 
 void sdlCallback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
     SdlStatus *s = (SdlStatus*) userdata;
 
     int sample_count = additional_amount / sizeof(float);
-    synthesise(s->synth, s->buffer, 0, s->output, sample_count);
+    synthesise(s->synth, s->buffer, s->outputModule, s->output, sample_count);
 
     SDL_PutAudioStreamData(stream, s->output, additional_amount);
 }
 
-void sdlPlay(Rack *synth, uint32_t ms) {
+void sdlPlay(Rack *synth, uint32_t ms, ModuleId m) {
     if (!SDL_Init(SDL_INIT_AUDIO)) {
         exit(-1);
     }
@@ -37,7 +38,8 @@ void sdlPlay(Rack *synth, uint32_t ms) {
     SdlStatus status = {
         .synth = synth,
         .buffer = &buffer,
-        .output = calloc(2 << 16, sizeof(float))
+        .output = calloc(2 << 16, sizeof(float)),
+        .outputModule = m
     };
 
     SDL_AudioSpec audioSpec = {
@@ -59,9 +61,9 @@ ModuleId buildSynth(Rack* synth);
 
 int main(int argc, char **argv) {
     Rack synth = newRack(64, FREQ);
-    buildSynth(&synth);
+    ModuleId m = buildSynth(&synth);
 
-    sdlPlay(&synth, 5000);
+    sdlPlay(&synth, 5000, m);
 
     freeRack(synth);
     return 0;
@@ -69,7 +71,6 @@ int main(int argc, char **argv) {
 
 ModuleId buildSynth(Rack* synth) {
     SineWaveSettings* svs = malloc(sizeof(SineWaveSettings));
-    svs->frequencyHz = 440;
-    svs->samplesPerSecond = FREQ;
+    svs->frequencyHz = 440.0;
     return addModule(synth, sineWaveFn, svs);
 }

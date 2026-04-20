@@ -3,10 +3,9 @@
 
 #include "wave.h"
 
-void sineWaveFn(float *output, size_t outputLen, void *settings, uint64_t sampleId) {
+void sineWaveFn(float *output, size_t outputLen, void *settings, float *const timeData) {
     SineWaveSettings *s = (SineWaveSettings*) settings;
     for (size_t i = 0; i < outputLen; ++i) {
-        float time = (float) (sampleId + i) / s->samplesPerSecond;
-        output[i] = sin(2 * 3.14159 * s->frequencyHz * time);
+        output[i] = sin(2 * 3.14159 * s->frequencyHz * timeData[i]);
     }
 }

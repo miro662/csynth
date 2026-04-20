@@ -4,43 +4,26 @@
 #include <string.h>
 #include <stdio.h>
 
+ModuleId addModuleInner(Rack *rack, ModuleType moduleType, ModuleFn fn, void *settings);
+
 Rack newRack(size_t chSamples, uint64_t samplesPerSecond) {
     size_t chCapacity = 16;
 
     Module* channels = calloc(chCapacity, sizeof(Module));
 
-    return (Rack) {
+    Rack rack = {
         .channels = channels,
         .chCapacity = chCapacity,
         .chSamples = chSamples,
         .sample = 0,
         .samplesPerSecond = samplesPerSecond
     };
+    addModuleInner(&rack, MODULE_TIME, NULL, NULL);
+    return rack;
 };
 
 ModuleId addModule(Rack *rack, ModuleFn fn, void *settings) {
-    // if there is a free channel, use it
-    for (ModuleId i = 0; i < rack->chCapacity; i++) {
-        Module* channel = &rack->channels[i];
-        if (!channel->occupied) {
-            channel->occupied = true;
-            channel->fn = fn;
-            channel->settings = settings;
-            // channel->deps is 0, correct for now
-            return i; 
-        }
-    }
-
-    // if there is no, add one member
-    size_t newChCapacity = rack->chCapacity + 1;
-    rack->channels = realloc(rack->channels, newChCapacity * sizeof(Module));
-    ModuleId lastId = newChCapacity - 1;
-    Module* lastChannel = &rack->channels[lastId];
-    lastChannel->occupied = true;
-    lastChannel->fn = fn;
-    lastChannel->settings = settings;
-    // channel->deps is 0, correct for now
-    return lastId;
+    return addModuleInner(rack, MODULE_FN, fn, settings);
 }
 
 void freeModule(Rack* rack, ModuleId id) {
@@ -69,7 +52,16 @@ void synthesise(Rack *const rack, Buffer *buffer, ModuleId outChannel, float *ou
             Module *mod = &rack->channels[m];
             float *modOutput = buffer->data + (m * rack->chSamples);
             if (mod->occupied) {
-                mod->fn(modOutput, rack->chSamples, mod->settings, rack->sample);
+                switch (mod->typ) {
+                    case MODULE_FN:
+                        mod->fn(modOutput, rack->chSamples, mod->settings, buffer->data);
+                        break;
+                    case MODULE_TIME:    
+                        for (size_t i = 0; i < rack->chSamples; ++i) {
+                            modOutput[i] = (float) (rack->sample + i) / rack->samplesPerSecond;
+                        }
+                        break;
+                }
             }
         }
         rack->sample += rack->chSamples;
@@ -83,3 +75,28 @@ void synthesise(Rack *const rack, Buffer *buffer, ModuleId outChannel, float *ou
         outSample += outputLen;
     }
 } 
+
+ModuleId addModuleInner(Rack *rack, ModuleType typ, ModuleFn fn, void *settings) {
+    // if there is a free channel, use it
+    for (ModuleId i = 0; i < rack->chCapacity; i++) {
+        Module* channel = &rack->channels[i];
+        if (!channel->occupied) {
+            channel->occupied = true;
+            channel->fn = fn;
+            channel->settings = settings;
+            channel->typ = typ;
+            return i; 
+        }
+    }
+
+    // if there is no, add one member
+    size_t newChCapacity = rack->chCapacity + 1;
+    rack->channels = realloc(rack->channels, newChCapacity * sizeof(Module));
+    ModuleId lastId = newChCapacity - 1;
+    Module* lastChannel = &rack->channels[lastId];
+    lastChannel->occupied = true;
+    lastChannel->fn = fn;
+    lastChannel->settings = settings;
+    lastChannel->typ = typ;
+    return lastId;
+}

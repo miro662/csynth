@@ -6,9 +6,8 @@
 
 typedef struct {
     float frequencyHz;
-    uint32_t samplesPerSecond;
 } SineWaveSettings;
 
-void sineWaveFn(float *output, size_t outputLen, void *settings, uint64_t sampleId);
+void sineWaveFn(float *output, size_t outputLen, void *settings, float *const timeData);
 
 #endif
