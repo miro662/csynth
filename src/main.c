@@ -1,63 +1,46 @@
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_timer.h>
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 #include "buffer.h"
 #include "rack.h"
 #include "modules/arith.h"
 #include "modules/wave.h"
+#include "playback.h"
 
 #define FREQ 44100
 
 typedef struct {
     Rack* synth;
     Buffer* buffer;
-    float* output;
     ModuleId outputModule;
-} SdlStatus;
+} SynthContext;
 
-void sdlCallback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
-    (void)total_amount;
-
-    SdlStatus *s = (SdlStatus*) userdata;
-
-    int sample_count = additional_amount / sizeof(float);
-    synthesise(s->synth, s->buffer, s->outputModule, s->output, sample_count);
-
-    SDL_PutAudioStreamData(stream, s->output, additional_amount);
+void synthCallback(PlaybackBufferSpec *bufferSpec, void *userData, uint32_t samples, float *buffer) {
+    (void)bufferSpec;
+    SynthContext *ctx = (SynthContext*) userData;
+    synthesise(ctx->synth, ctx->buffer, ctx->outputModule, buffer, samples);
 }
 
-void sdlPlay(Rack *synth, uint32_t ms, ModuleId m) {
-    if (!SDL_Init(SDL_INIT_AUDIO)) {
-        exit(-1);
-    }
-
+void synthPlay(Rack *synth, uint32_t ms, ModuleId m) {
     Buffer buffer = newBuffer();
-    SdlStatus status = {
+    SynthContext ctx = {
         .synth = synth,
         .buffer = &buffer,
-        .output = calloc(2 << 16, sizeof(float)),
         .outputModule = m
     };
 
-    SDL_AudioSpec audioSpec = {
-        .format = SDL_AUDIO_F32,
-        .channels = 1,
-        .freq = FREQ
-    };
+    PlaybackThread *pt;
+    Error err = playbackNew(&ctx, synthCallback, &pt);
+    if (err.etype != ERR_OK) {
+        fprintf(stderr, "Playback error: %s\n", err.message);
+        exit(-1);
+    }
 
-    SDL_AudioStream *stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &audioSpec, sdlCallback, &status);
-    SDL_ResumeAudioStreamDevice(stream);
-
+    playbackResume(pt);
     SDL_Delay(ms);
-    
-    SDL_DestroyAudioStream(stream);
-    SDL_Quit();
+    playbackFree(pt);
 }
 
 ModuleId buildSynth(Rack* synth);
@@ -69,7 +52,7 @@ int main(int argc, char **argv) {
     Rack synth = newRack(64, FREQ);
     ModuleId m = buildSynth(&synth);
 
-    sdlPlay(&synth, 5000, m);
+    synthPlay(&synth, 5000, m);
 
     freeRack(synth);
     return 0;
@@ -80,13 +63,11 @@ ModuleId buildSynth(Rack* synth) {
     c1s->value = 440.0f;
     ModuleId soundWaveFreq = addModule(synth, Constant_Fn, c1s, (uint32_t[]){0, 0});
     ModuleId soundWave = addModule(synth, SineWave_Fn, NULL, (uint32_t[]){ 0, soundWaveFreq });
-    
-    return soundWave;
 
-    // Constant_Settings *c2s = malloc(sizeof(Constant_Settings));
-    // c2s->value = 0.1f;
-    // ModuleId timeWaveFreq = addModule(synth, Constant_Fn, c2s, (uint32_t[]){0, 0});
-    // ModuleId timeWave = addModule(synth, SineWave_Fn, NULL, (uint32_t[]){ 0, timeWaveFreq });
+    Constant_Settings *c2s = malloc(sizeof(Constant_Settings));
+    c2s->value = 0.1f;
+    ModuleId timeWaveFreq = addModule(synth, Constant_Fn, c2s, (uint32_t[]){0, 0});
+    ModuleId timeWave = addModule(synth, SineWave_Fn, NULL, (uint32_t[]){ 0, timeWaveFreq });
 
-    // return addModule(synth, Multiply_Fn, NULL, (uint32_t[]){ soundWave, timeWave });
+    return addModule(synth, Multiply_Fn, NULL, (uint32_t[]){ soundWave, timeWave });
 }
