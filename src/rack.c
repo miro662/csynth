@@ -48,6 +48,9 @@ void synthesise(Rack *const rack, Buffer *buffer, ModuleId outChannel, float *ou
 
     size_t outSample = 0;
     while (outSample < outSamples) {
+        size_t remSamples = outSamples - outSample;
+        size_t chunkLen = remSamples < rack->chSamples ? remSamples : rack->chSamples;
+
         // synthesise
         for (ModuleId m = 0; m < rack->chCapacity; ++m) {
             Module *mod = &rack->channels[m];
@@ -60,25 +63,22 @@ void synthesise(Rack *const rack, Buffer *buffer, ModuleId outChannel, float *ou
             if (mod->occupied) {
                 switch (mod->typ) {
                     case MODULE_FN:
-                        mod->fn(modOutput, rack->chSamples, mod->settings, inputs);
+                        mod->fn(modOutput, chunkLen, mod->settings, inputs);
                         break;
-                    case MODULE_TIME:    
-                        for (size_t i = 0; i < rack->chSamples; ++i) {
-                            modOutput[i] = (float) (rack->sample + i) / rack->samplesPerSecond;
+                    case MODULE_TIME:
+                        for (size_t i = 0; i < chunkLen; ++i) {
+                            modOutput[i] = (float)(rack->sample + i) / rack->samplesPerSecond;
                         }
                         break;
                 }
             }
         }
-        rack->sample += rack->chSamples;
 
         // copy to destination
-        size_t outputIdx = outChannel * rack->chSamples;
-        float *outputPtr = &buffer->data[outputIdx];
-        size_t remSamples = outSamples - outSample;
-        size_t outputLen = remSamples < rack->chSamples ? remSamples : rack->chSamples;
-        memcpy(output + outSample, outputPtr, outputLen * sizeof(float));
-        outSample += outputLen;
+        float *outputPtr = buffer->data + (outChannel * rack->chSamples);
+        memcpy(output + outSample, outputPtr, chunkLen * sizeof(float));
+        rack->sample += chunkLen;
+        outSample += chunkLen;
     }
 } 
 
