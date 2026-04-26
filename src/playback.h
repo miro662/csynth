@@ -23,17 +23,16 @@ typedef void (*PlaybackCallback)(
 );
 
 typedef struct {
-    void *userData;
+    void * volatile userData;
     float *buffer;
     PlaybackCallback callback;
     SDL_AudioStream *audioDevice;
 } PlaybackThread;
 
-
-// TODO: accept PlaybackDevice
 Error playbackNew(void* userData, PlaybackCallback callback, PlaybackThread **result);
 void playbackResume(PlaybackThread* thread);
 void playbackPause(PlaybackThread* thread);
+void playbackSetUserdata(PlaybackThread* thread, void* userData);
 void playbackFree(PlaybackThread* thread);
 
 #endif

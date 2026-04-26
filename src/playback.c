@@ -45,14 +45,19 @@ void __cdecl streamCallback(void *userdata, SDL_AudioStream *stream, int additio
         .layout = LAYOUT_INTERLEAVED
     };
 
+    void *userData = pt->userData;
     int sample_count = additional_amount / sizeof(float);
-    pt->callback(&bufferSpec, pt->userData, sample_count, pt->buffer);
+    pt->callback(&bufferSpec, userData, sample_count, pt->buffer);
 
     SDL_PutAudioStreamData(stream, pt->buffer, additional_amount);
 }
 
 void playbackResume(PlaybackThread* thread) {
     SDL_ResumeAudioStreamDevice(thread->audioDevice);
+}
+
+void playbackSetUserdata(PlaybackThread* thread, void* userData) {
+    thread->userData = userData;
 }
 
 void playbackPause(PlaybackThread* thread) {
