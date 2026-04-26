@@ -22,6 +22,8 @@ typedef struct {
 } SdlStatus;
 
 void sdlCallback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
+    (void)total_amount;
+
     SdlStatus *s = (SdlStatus*) userdata;
 
     int sample_count = additional_amount / sizeof(float);
@@ -61,6 +63,9 @@ void sdlPlay(Rack *synth, uint32_t ms, ModuleId m) {
 ModuleId buildSynth(Rack* synth);
 
 int main(int argc, char **argv) {
+    (void)argc;
+    (void)argv;
+
     Rack synth = newRack(64, FREQ);
     ModuleId m = buildSynth(&synth);
 
@@ -72,14 +77,16 @@ int main(int argc, char **argv) {
 
 ModuleId buildSynth(Rack* synth) {
     Constant_Settings *c1s = malloc(sizeof(Constant_Settings));
-    c1s->value = 440.0;
+    c1s->value = 440.0f;
     ModuleId soundWaveFreq = addModule(synth, Constant_Fn, c1s, (uint32_t[]){0, 0});
     ModuleId soundWave = addModule(synth, SineWave_Fn, NULL, (uint32_t[]){ 0, soundWaveFreq });
     
-    Constant_Settings *c2s = malloc(sizeof(Constant_Settings));
-    c2s->value = 0.1;
-    ModuleId timeWaveFreq = addModule(synth, Constant_Fn, c2s, (uint32_t[]){0, 0});
-    ModuleId timeWave = addModule(synth, SineWave_Fn, NULL, (uint32_t[]){ 0, timeWaveFreq });
+    return soundWave;
 
-    return addModule(synth, Multiply_Fn, NULL, (uint32_t[]){ soundWave, timeWave });
+    // Constant_Settings *c2s = malloc(sizeof(Constant_Settings));
+    // c2s->value = 0.1f;
+    // ModuleId timeWaveFreq = addModule(synth, Constant_Fn, c2s, (uint32_t[]){0, 0});
+    // ModuleId timeWave = addModule(synth, SineWave_Fn, NULL, (uint32_t[]){ 0, timeWaveFreq });
+
+    // return addModule(synth, Multiply_Fn, NULL, (uint32_t[]){ soundWave, timeWave });
 }

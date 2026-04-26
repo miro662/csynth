@@ -2,7 +2,9 @@
 
 #include <string.h>
 
-void Constant_Fn(float *output, size_t outputLen, void *settings, float **inputs) {
+void Constant_Fn(float *output, size_t outputLen, void *settings, float  **inputs) {
+    (void)inputs;
+
     Constant_Settings *s = (Constant_Settings*) settings;
     for (size_t i = 0; i < outputLen; ++i) {
         output[i] = s->value;
@@ -10,12 +12,16 @@ void Constant_Fn(float *output, size_t outputLen, void *settings, float **inputs
 }
 
 void Add_Fn(float *output, size_t outputLen, void *settings, float **inputs) {
+    (void)settings;
+
     for (size_t i = 0; i < outputLen; ++i) {
         output[i] = inputs[0][i] + inputs[1][i];
     }
 }
 
 void Multiply_Fn(float *output, size_t outputLen, void *settings, float **inputs) {
+    (void)settings;
+    
     for (size_t i = 0; i < outputLen; ++i) {
         output[i] = inputs[0][i] * inputs[1][i];
     }

@@ -6,8 +6,8 @@
 
 ModuleId addModuleInner(Rack *rack, ModuleType typ, ModuleFn fn, void *settings, uint32_t inputs[MAX_MODULE_INPUTS]);
 
-Rack newRack(size_t chSamples, uint64_t samplesPerSecond) {
-    size_t chCapacity = 16;
+Rack newRack(size_t chSamples, uint32_t samplesPerSecond) {
+    ModuleId chCapacity = 16;
 
     Module* channels = calloc(chCapacity, sizeof(Module));
 
@@ -97,7 +97,7 @@ ModuleId addModuleInner(Rack *rack, ModuleType typ, ModuleFn fn, void *settings,
     }
 
     // if there is no, add one member
-    size_t newChCapacity = rack->chCapacity + 1;
+    ModuleId newChCapacity = rack->chCapacity + 1;
     rack->channels = realloc(rack->channels, newChCapacity * sizeof(Module));
     ModuleId lastId = newChCapacity - 1;
     Module* lastChannel = &rack->channels[lastId];

@@ -8,6 +8,7 @@
 
 #define MAX_MODULE_INPUTS 2
  
+typedef uint32_t ModuleId;
 typedef void (*ModuleFn)(float *output, size_t outputLen, void *settings, float **inputs);
 
 typedef enum {
@@ -26,15 +27,14 @@ typedef struct {
 
 typedef struct {
     Module* channels;
-    size_t chCapacity;
+    ModuleId chCapacity;
     size_t chSamples;
     uint64_t sample;
     uint32_t samplesPerSecond;
 } Rack;
  
-typedef uint32_t ModuleId;
 
-Rack newRack(size_t chSamples, uint64_t samplesPerSecond);
+Rack newRack(size_t chSamples, uint32_t samplesPerSecond);
 ModuleId addModule(Rack *rack, ModuleFn fn, void *settings, uint32_t inputs[MAX_MODULE_INPUTS]);
 void freeModule(Rack *rack, ModuleId id);
 void freeRack(Rack rack);
