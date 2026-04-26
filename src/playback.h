@@ -2,7 +2,6 @@
 #define __PLAYBACK_H
 
 #include <stdint.h>
-#include <SDL3/SDL.h>
 #include "error.h"
 
 typedef enum {
@@ -24,9 +23,16 @@ typedef void (*PlaybackCallback)(
 
 typedef struct {
     void * volatile userData;
-    float *buffer;
+    float *buffer;          // unused in WASAPI backend (zero-copy)
     PlaybackCallback callback;
-    SDL_AudioStream *audioDevice;
+    void *audioClient;      // IAudioClient*
+    void *renderClient;     // IAudioRenderClient*
+    void *hEvent;           // HANDLE – buffer-ready event
+    void *hStopEvent;       // HANDLE – thread shutdown signal
+    void *hThread;          // HANDLE – render thread
+    uint32_t bufferFrames;
+    uint32_t sampleRate;
+    int comInitialized;     // whether this instance owns a CoInitialize ref
 } PlaybackThread;
 
 Error playbackNew(void* userData, PlaybackCallback callback, PlaybackThread **result);

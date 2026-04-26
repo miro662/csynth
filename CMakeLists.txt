@@ -20,4 +20,4 @@ file(GLOB_RECURSE SOURCES "src/*.c")
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3 $<$<NOT:$<BOOL:${MSVC}>>:m>)
+target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3 $<$<NOT:$<BOOL:${MSVC}>>:m> $<$<BOOL:${MSVC}>:ole32>)

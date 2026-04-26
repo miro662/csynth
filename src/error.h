@@ -2,17 +2,13 @@
 #define __ERROR_H
 
 typedef enum {
-    /// There is no error
     ERR_OK,
-    ERR_SDL_INIT,
-    ERR_SDL_AUDIO,
+    ERR_WASAPI_INIT,
+    ERR_WASAPI_AUDIO,
 } ErrorType;
 
 typedef struct {
-    /// Type
     ErrorType etype;
-
-    /// Message with detailed error info. Can be null
     char *message;
 } Error;
 
